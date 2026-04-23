@@ -16,36 +16,40 @@ For prep checklist, gear, tools, and editing advice, see [video-plan.md](video-p
 
 ---
 
-## 🎬 Beat 2 — Why Twin first (0:15 → 1:05, 50s)
+## 🎬 Beat 2 — Why Twin first (0:15 → 1:35, ~80s)
 
 **Need:**
 - Tab on `docs/research.md` at the top on GitHub
 - Optional face-cam
 
 **See:**
-- 0:15–0:30 → face-cam or title card "If you're Ditto's founder, what do you build first?"
-- 0:30–0:50 → research.md, scroll slowly through Problem + MBTI+BigFive sections
-- 0:50–1:05 → back to app reveal card from Beat 1
+- 0:15–0:40 → face-cam or title card "If you're Ditto's founder, what do you build first?"
+- 0:40–1:00 → research.md, scroll slowly through Problem section
+- 1:00–1:35 → back to app reveal card from Beat 1 (or repo)
 
-**Say:** (~115 words)
+**Say:** (~175 words, slow)
 
-> The prompt is: **if you're Ditto's founder, what do you build first?**
+> I'm applying for Ditto's engineering internship.
 >
 > *(pause)*
 >
-> Here's the thing about dating apps. Students get commodified into thumbnails. Swiping through five hundred strangers. Hoping one stops scrolling.
+> Before I answer the prompt, I talked to a few friends who actively use dating apps. I asked them what actually breaks about the experience.
 >
-> Ditto flips that. An AI represents you. So the human meeting is already warm.
+> Two things came up every time.
 >
-> *(pause)*
+> **One — fake profiles.** Catfishing. People curate photos and bios that barely resemble who they are. Half the profiles feel performative.
 >
-> But that only works if the AI has an accurate *you* to represent. Which means the first feature can't be the matcher. Or the date proposer. It has to be the one that **builds the persona.**
->
-> That's Twin.
+> **Two — personality mismatch.** Even when the person is real, dates rarely click on anything deeper than shared hobbies. Someone says they like hiking, you match, the conversation falls flat because you're fundamentally different people.
 >
 > *(pause)*
 >
-> The twist — MBTI isn't scientifically rigorous. But college students screenshot their letters and share them. So Twin scores all five **Big Five** factors under the hood. And shows MBTI on the surface.
+> Ditto's approach fixes both at the root. There *is* no profile — an AI represents you, built from how you actually behave. Nothing to curate, nothing to catfish. And matching happens on real personality signal, not on vibes.
+>
+> *(pause)*
+>
+> But that only works if the AI has an accurate *you* to represent. Which means the first feature can't be the matcher or the date proposer — it has to be the one that builds the persona.
+>
+> That's what I built. It's called **Twin**. I'm going to walk you through it.
 
 ---
 
