@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.agent.runner import send_user_message, start_session
+from app.db import SessionLocal
+from app.models.orm import SessionRow
+from app.models.persona import Persona
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -37,3 +40,17 @@ async def send_message(session_id: str, body: MessageSendRequest) -> MessageSend
     return MessageSendResponse(
         agent_messages=result.agent_messages, complete=result.complete
     )
+
+
+@router.get("/{session_id}/persona", response_model=Persona)
+async def get_persona(session_id: str) -> Persona:
+    with SessionLocal() as session:
+        row = session.get(SessionRow, session_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail=f"session {session_id} not found")
+        if not row.complete or not row.persona_json:
+            raise HTTPException(
+                status_code=409,
+                detail=f"session {session_id} not complete",
+            )
+        return Persona.model_validate_json(row.persona_json)

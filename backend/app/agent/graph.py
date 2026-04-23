@@ -9,6 +9,8 @@ from app.agent.nodes import (
     probe_planning_node,
     probe_support_node,
     probe_weekend_node,
+    reveal_node,
+    synthesize_node,
     values_rank_node,
 )
 from app.agent.state import AgentState
@@ -37,6 +39,8 @@ def build_graph():
     builder.add_node("probe_support", probe_support_node)
     builder.add_node("values_rank", values_rank_node)
     builder.add_node("ask_dealbreakers", dealbreakers_node)  # renamed to avoid clash with state.dealbreakers
+    builder.add_node("synthesize", synthesize_node)
+    builder.add_node("reveal", reveal_node)
 
     builder.set_entry_point("greeting")
     builder.add_edge("greeting", "collect_demographics")
@@ -61,7 +65,9 @@ def build_graph():
     builder.add_edge("probe_planning", "probe_support")
     builder.add_edge("probe_support", "values_rank")
     builder.add_edge("values_rank", "ask_dealbreakers")
-    builder.add_edge("ask_dealbreakers", END)  # temporary — synthesize comes in Phase 6
+    builder.add_edge("ask_dealbreakers", "synthesize")
+    builder.add_edge("synthesize", "reveal")
+    builder.add_edge("reveal", END)
 
     checkpointer = MemorySaver()
     return builder.compile(
@@ -74,5 +80,6 @@ def build_graph():
             "probe_support",
             "values_rank",
             "ask_dealbreakers",
+            # synthesize + reveal fire inline after dealbreakers — not interrupted
         ],
     )

@@ -490,3 +490,124 @@ async def dealbreakers_node(state: AgentState, config: RunnableConfig) -> dict:
         "dealbreakers": result.dealbreakers,
         "current_node": "synthesize",
     }
+
+
+# ---------- synthesize + reveal ----------
+
+import json
+
+from app.models.persona import Persona
+from app.services.mbti import derive_mbti
+
+
+class _PersonaSynthOutput(BaseModel):
+    summary: str
+    interests: list[Interest]
+    conversation_hooks: list[str]
+
+
+async def synthesize_node(state: AgentState, config: RunnableConfig) -> dict:
+    """Opus call that produces the final Persona JSON. Persists to DB."""
+    personality = derive_mbti(state.dimension_scores)
+
+    transcript_lines = [f"{m.role}: {m.text}" for m in state.messages]
+    interest_probed_str = (
+        f"{state.interest_probed.topic} ({state.interest_probed.depth_signal}): "
+        f"{state.interest_probed.specific_details}"
+        if state.interest_probed
+        else "(none probed in depth)"
+    )
+
+    user_payload = {
+        "first_name": state.first_name,
+        "demographics": state.demographics.model_dump() if state.demographics else {},
+        "values_ranked": state.values_ranked,
+        "dealbreakers": state.dealbreakers,
+        "interests_detected": state.interests_detected,
+        "interest_probed": interest_probed_str,
+        "mbti": personality.mbti,
+        "dimensions": personality.dimensions.model_dump(),
+        "transcript": "\n".join(transcript_lines),
+    }
+
+    system = load("synthesize")
+    messages = [{"role": "user", "content": json.dumps(user_payload, indent=2)}]
+
+    synth = await structured_call(
+        model=settings.anthropic_synthesis_model,
+        system=system,
+        messages=messages,
+        output_model=_PersonaSynthOutput,
+        tool_name="persona_synthesis",
+        tool_description="Produce the summary, final interests, and conversation hooks.",
+        max_tokens=2048,
+    )
+
+    if state.demographics is None:
+        raise RuntimeError("synthesize called without demographics filled")
+
+    persona = Persona(
+        session_id=state.session_id,
+        summary=synth.summary,
+        demographics=state.demographics,
+        personality=personality,
+        values_ranked=state.values_ranked,
+        interests=synth.interests,
+        dealbreakers=state.dealbreakers,
+        conversation_hooks=synth.conversation_hooks[:3],
+        created_at=datetime.utcnow(),
+    )
+
+    # Persist to DB
+    from app.db import SessionLocal
+    from app.models.orm import MessageRow, ScoreRow, SessionRow
+
+    with SessionLocal() as session:
+        row = session.get(SessionRow, state.session_id)
+        if row is None:
+            row = SessionRow(id=state.session_id, complete=True)
+            session.add(row)
+        row.complete = True
+        row.persona_json = persona.model_dump_json()
+
+        # Persist transcript (only rows not yet written — simple: purge and rewrite)
+        session.query(MessageRow).filter_by(session_id=state.session_id).delete()
+        for m in state.messages:
+            session.add(
+                MessageRow(
+                    session_id=state.session_id,
+                    role=m.role,
+                    text=m.text,
+                    created_at=m.created_at,
+                )
+            )
+
+        # Persist per-dimension scores (purge + rewrite for idempotency on retries)
+        session.query(ScoreRow).filter_by(session_id=state.session_id).delete()
+        for dim, score_list in state.dimension_scores.items():
+            for score in score_list:
+                session.add(
+                    ScoreRow(
+                        session_id=state.session_id,
+                        dimension=dim,
+                        score=score,
+                        evidence="(aggregated at synthesis time)",
+                        probe_node=dim,
+                    )
+                )
+        session.commit()
+
+    return {"current_node": "reveal"}
+
+
+async def reveal_node(state: AgentState, config: RunnableConfig) -> dict:
+    """Delivers a short reveal message. No LLM call."""
+    channel = _get_channel(config)
+    name = state.first_name or "you"
+    msg = f"alright {name}, your twin is ready. scroll up to see what i got."
+    await _send(state, channel, msg)
+    return {
+        "messages": state.messages,
+        "complete": True,
+        "current_node": "reveal",
+    }
