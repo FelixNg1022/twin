@@ -235,3 +235,258 @@ async def probe_weekend_node(state: AgentState, config: RunnableConfig) -> dict:
         "interest_to_probe_topic": probe.interest_to_probe,
         "current_node": next_node,
     }
+
+
+# ---------- adaptive_interest ----------
+
+from app.models.persona import Interest
+from app.models.probe import InterestProbeOutput
+
+
+async def adaptive_interest_node(state: AgentState, config: RunnableConfig) -> dict:
+    """One follow-up probe about the distinctive interest from probe_weekend."""
+    channel = _get_channel(config)
+    topic = state.interest_to_probe_topic or ""
+    user_text = _user_last_text(state)
+
+    system = load("adaptive_interest").format(
+        topic=topic,
+        user_message=user_text or "(no reply yet)",
+    )
+    messages = [
+        {
+            "role": "user",
+            "content": f"TOPIC_BEING_PROBED: {topic}\nUSER_MESSAGE: {user_text}",
+        }
+    ]
+
+    probe = await structured_call(
+        model=settings.anthropic_turn_model,
+        system=system,
+        messages=messages,
+        output_model=InterestProbeOutput,
+        tool_name="interest_probe_output",
+        tool_description="Extract specific details and depth signal for the interest.",
+    )
+
+    await _send(state, channel, probe.next_message)
+
+    interest = Interest(
+        topic=topic,
+        depth_signal=probe.depth_signal,
+        specific_details=probe.specific_details,
+    )
+    return {
+        "messages": state.messages,
+        "interest_probed": interest,
+        "interest_to_probe_topic": None,
+        "current_node": "probe_planning",
+    }
+
+
+# ---------- probe_planning ----------
+
+async def probe_planning_node(state: AgentState, config: RunnableConfig) -> dict:
+    """Asks about trip planning, scores intuition + judging."""
+    channel = _get_channel(config)
+    user_text = _user_last_text(state)
+    system = load("probe_planning")
+    user_content = (
+        f"FIRST_NAME: {state.first_name or 'unknown'}\n"
+        f"USER_MESSAGE: {user_text or '(no user message yet — send the opening question)'}"
+    )
+    messages = [{"role": "user", "content": user_content}]
+
+    if not user_text:
+        client = get_client()
+        response = await client.messages.create(
+            model=settings.anthropic_turn_model,
+            max_tokens=200,
+            system=system + "\n\nThis is your FIRST turn of this probe. Just send the opening question.",
+            messages=messages,
+        )
+        text = "".join(b.text for b in response.content if b.type == "text").strip()
+        await _send(state, channel, text)
+        return {"messages": state.messages, "current_node": "probe_planning"}
+
+    probe = await structured_call(
+        model=settings.anthropic_turn_model,
+        system=system,
+        messages=messages,
+        output_model=ProbeOutput,
+        tool_name="probe_output",
+        tool_description="Record scores and the next message.",
+    )
+
+    new_scores = dict(state.dimension_scores)
+    for dim, score in probe.scores.items():
+        new_scores.setdefault(dim, []).append(score)
+
+    new_interests = list(state.interests_detected)
+    for t in probe.interests_detected:
+        if t not in new_interests:
+            new_interests.append(t)
+
+    await _send(state, channel, probe.next_message)
+    return {
+        "messages": state.messages,
+        "dimension_scores": new_scores,
+        "interests_detected": new_interests,
+        "current_node": "probe_support",
+    }
+
+
+# ---------- probe_support ----------
+
+async def probe_support_node(state: AgentState, config: RunnableConfig) -> dict:
+    """Asks about supporting a friend through a breakup, scores thinking."""
+    channel = _get_channel(config)
+    user_text = _user_last_text(state)
+    system = load("probe_support")
+    user_content = (
+        f"FIRST_NAME: {state.first_name or 'unknown'}\n"
+        f"USER_MESSAGE: {user_text or '(no user message yet — send the opening question)'}"
+    )
+    messages = [{"role": "user", "content": user_content}]
+
+    if not user_text:
+        client = get_client()
+        response = await client.messages.create(
+            model=settings.anthropic_turn_model,
+            max_tokens=200,
+            system=system + "\n\nThis is your FIRST turn of this probe. Just send the opening question.",
+            messages=messages,
+        )
+        text = "".join(b.text for b in response.content if b.type == "text").strip()
+        await _send(state, channel, text)
+        return {"messages": state.messages, "current_node": "probe_support"}
+
+    probe = await structured_call(
+        model=settings.anthropic_turn_model,
+        system=system,
+        messages=messages,
+        output_model=ProbeOutput,
+        tool_name="probe_output",
+        tool_description="Record scores and the next message.",
+    )
+
+    new_scores = dict(state.dimension_scores)
+    for dim, score in probe.scores.items():
+        new_scores.setdefault(dim, []).append(score)
+
+    new_interests = list(state.interests_detected)
+    for t in probe.interests_detected:
+        if t not in new_interests:
+            new_interests.append(t)
+
+    await _send(state, channel, probe.next_message)
+    return {
+        "messages": state.messages,
+        "dimension_scores": new_scores,
+        "interests_detected": new_interests,
+        "current_node": "values_rank",
+    }
+
+
+# ---------- values_rank ----------
+
+class _ValuesRankOutput(BaseModel):
+    values_ranked: list[str] = Field(
+        description="User's top 3 in order, each from the fixed vocabulary "
+        "{ambition, family, adventure, growth, stability, creativity}. May be "
+        "fewer than 3 if user gave fewer.",
+    )
+    next_message: str
+
+
+async def values_rank_node(state: AgentState, config: RunnableConfig) -> dict:
+    """Asks the user to rank 3 values. No scoring."""
+    channel = _get_channel(config)
+    user_text = _user_last_text(state)
+    system = load("values_rank")
+    messages = [
+        {
+            "role": "user",
+            "content": (
+                f"USER_MESSAGE: {user_text or '(no user message yet — send the opening question)'}"
+            ),
+        }
+    ]
+
+    if not user_text:
+        client = get_client()
+        response = await client.messages.create(
+            model=settings.anthropic_turn_model,
+            max_tokens=200,
+            system=system + "\n\nThis is your FIRST turn of this step. Just send the opening question with the list of six values.",
+            messages=messages,
+        )
+        text = "".join(b.text for b in response.content if b.type == "text").strip()
+        await _send(state, channel, text)
+        return {"messages": state.messages, "current_node": "values_rank"}
+
+    result = await structured_call(
+        model=settings.anthropic_turn_model,
+        system=system,
+        messages=messages,
+        output_model=_ValuesRankOutput,
+        tool_name="values_rank_output",
+        tool_description="Extract the user's top 3 values in order.",
+    )
+
+    await _send(state, channel, result.next_message)
+    return {
+        "messages": state.messages,
+        "values_ranked": result.values_ranked[:3],
+        "current_node": "ask_dealbreakers",
+    }
+
+
+# ---------- dealbreakers ----------
+
+class _DealbreakersOutput(BaseModel):
+    dealbreakers: list[str] = Field(
+        description="List of short dealbreaker phrases extracted from the user.",
+    )
+    next_message: str
+
+
+async def dealbreakers_node(state: AgentState, config: RunnableConfig) -> dict:
+    """Final interview question. Extracts dealbreakers, transitions to synthesize."""
+    channel = _get_channel(config)
+    user_text = _user_last_text(state)
+    system = load("dealbreakers")
+    messages = [
+        {
+            "role": "user",
+            "content": f"USER_MESSAGE: {user_text or '(no user message yet — send the opening question)'}",
+        }
+    ]
+
+    if not user_text:
+        client = get_client()
+        response = await client.messages.create(
+            model=settings.anthropic_turn_model,
+            max_tokens=200,
+            system=system + "\n\nThis is your FIRST turn of this step. Just send the opening question.",
+            messages=messages,
+        )
+        text = "".join(b.text for b in response.content if b.type == "text").strip()
+        await _send(state, channel, text)
+        return {"messages": state.messages, "current_node": "ask_dealbreakers"}
+
+    result = await structured_call(
+        model=settings.anthropic_turn_model,
+        system=system,
+        messages=messages,
+        output_model=_DealbreakersOutput,
+        tool_name="dealbreakers_output",
+        tool_description="Extract the user's dealbreakers.",
+    )
+
+    await _send(state, channel, result.next_message)
+    return {
+        "messages": state.messages,
+        "dealbreakers": result.dealbreakers,
+        "current_node": "synthesize",
+    }
