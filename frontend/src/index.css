@@ -9,6 +9,8 @@ html, body, #root {
 
 body {
   font-family: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
-  background: #ffffff;
+  /* iOS-native system gray so the 480px chat column reads as a card on desktop.
+     Mobile viewports get the same bg but the card fills the viewport anyway. */
+  background: #f2f2f7;
   color: #000000;
 }

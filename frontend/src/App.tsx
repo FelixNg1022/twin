@@ -19,7 +19,7 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-[480px] mx-auto bg-white relative">
+    <div className="flex flex-col h-full max-w-[480px] mx-auto bg-white relative sm:my-4 sm:h-[calc(100%-2rem)] sm:rounded-2xl sm:shadow-xl sm:overflow-hidden">
       <button
         onClick={handleReset}
         aria-label="Start over — reset the interview"

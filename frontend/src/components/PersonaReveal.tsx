@@ -70,7 +70,7 @@ export function PersonaReveal({ persona, onClose }: Props) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="persona-reveal-heading"
-      className="absolute inset-0 bg-black/30 flex items-end z-20 transition-opacity duration-300"
+      className="absolute inset-0 bg-black/50 flex items-end z-20 transition-opacity duration-300"
       style={{ opacity: open ? 1 : 0 }}
       onClick={handleClose}
     >
