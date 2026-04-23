@@ -186,6 +186,7 @@ type BarRow = {
   right: string;
   value: number;
   tooltip: string;
+  notMeasured?: boolean;
 };
 
 function mbtiRows(dims: Persona["personality"]["dimensions"]): BarRow[] {
@@ -252,6 +253,15 @@ function bigFiveRows(dims: Persona["personality"]["dimensions"]): BarRow[] {
       value: dims.judging,
       tooltip: "Big Five Conscientiousness. Mapped from MBTI J/P axis. Scored from planning style.",
     },
+    {
+      label: "Neuroticism",
+      left: "Low",
+      right: "High",
+      value: 0,
+      tooltip:
+        "The fifth Big Five factor. NOT measured in v1 — MBTI has no Neuroticism axis, so we'd need a dedicated behavioral probe (e.g., how the user responds to a recent stressor). Planned for v2 alongside the humor signal.",
+      notMeasured: true,
+    },
   ];
 }
 
@@ -303,8 +313,34 @@ function DimensionBars({ dims }: { dims: Persona["personality"]["dimensions"] })
         )}
       </div>
       <div className="space-y-3">
-        {rows.map(({ label, left, right, value, tooltip }) => {
+        {rows.map((row) => {
+          const { label, left, right, value, tooltip, notMeasured } = row;
           const dominantLetter = value >= 0.5 ? right : left;
+          if (notMeasured) {
+            return (
+              <div key={label} title={tooltip} className="opacity-60">
+                <div className="flex justify-between items-baseline text-[11px] mb-0.5">
+                  <span className="text-gray-500 font-medium italic">{label}</span>
+                  <span className="font-mono text-gray-400 italic">not measured</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <span className="w-8 text-right font-medium text-gray-400">{left}</span>
+                  <div
+                    role="meter"
+                    aria-label={`${label} is not measured in v1. ${tooltip}`}
+                    aria-valuenow={0}
+                    aria-valuemin={0}
+                    aria-valuemax={1}
+                    className="flex-1 h-1.5 bg-gray-100 rounded-full relative border border-dashed border-gray-300"
+                  />
+                  <span className="w-8 text-left font-medium text-gray-400">{right}</span>
+                </div>
+                <div className="text-[10px] text-gray-400 italic mt-0.5 text-center">
+                  no mbti equivalent · v2 via dedicated probe
+                </div>
+              </div>
+            );
+          }
           return (
             <div key={label} title={tooltip}>
               <div className="flex justify-between items-baseline text-[11px] mb-0.5">
