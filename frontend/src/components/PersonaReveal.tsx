@@ -180,76 +180,158 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function DimensionBars({ dims }: { dims: Persona["personality"]["dimensions"] }) {
-  const rows: Array<{
-    label: string;
-    left: string;
-    right: string;
-    value: number;
-    tooltip: string;
-  }> = [
+type BarRow = {
+  label: string;
+  left: string;
+  right: string;
+  value: number;
+  tooltip: string;
+};
+
+function mbtiRows(dims: Persona["personality"]["dimensions"]): BarRow[] {
+  return [
     {
       label: "Extraversion",
       left: "I",
       right: "E",
       value: dims.extraversion,
-      tooltip: "Scored from how you described Saturday night — solo vs. crowd energy.",
+      tooltip: "MBTI E/I — scored from weekend activity (solo vs. crowd energy).",
     },
     {
       label: "Intuition",
       left: "S",
       right: "N",
       value: dims.intuition,
-      tooltip: "Scored from how you plan trips — abstract vibe vs. concrete itinerary.",
+      tooltip: "MBTI N/S — scored from trip planning (abstract vs. concrete).",
     },
     {
       label: "Thinking",
       left: "F",
       right: "T",
       value: dims.thinking,
-      tooltip: "Scored from how you support a friend in crisis — analytical vs. emotional first.",
+      tooltip: "MBTI T/F — scored from friend-in-crisis response (analysis vs. empathy first).",
     },
     {
       label: "Judging",
       left: "P",
       right: "J",
       value: dims.judging,
-      tooltip: "Scored from planning style — structure/closure vs. flexibility/open options.",
+      tooltip: "MBTI J/P — scored from planning style (structure vs. flexibility).",
     },
   ];
+}
+
+function bigFiveRows(dims: Persona["personality"]["dimensions"]): BarRow[] {
+  return [
+    {
+      label: "Extraversion",
+      left: "Low",
+      right: "High",
+      value: dims.extraversion,
+      tooltip: "Big Five Extraversion. Same axis as MBTI E/I. Scored from weekend activity.",
+    },
+    {
+      label: "Openness",
+      left: "Low",
+      right: "High",
+      value: dims.intuition,
+      tooltip: "Big Five Openness. Mapped from MBTI N/S axis (Intuition ≈ Openness). Scored from trip planning.",
+    },
+    {
+      label: "Agreeableness",
+      left: "Low",
+      right: "High",
+      // Inverted: MBTI T-ness correlates with LOWER Agreeableness; F with higher.
+      value: 1 - dims.thinking,
+      tooltip: "Big Five Agreeableness. Mapped from MBTI F/T axis (Feeling ≈ higher Agreeableness) — inverted from the thinking score. Scored from friend-in-crisis response.",
+    },
+    {
+      label: "Conscientiousness",
+      left: "Low",
+      right: "High",
+      value: dims.judging,
+      tooltip: "Big Five Conscientiousness. Mapped from MBTI J/P axis. Scored from planning style.",
+    },
+  ];
+}
+
+function DimensionBars({ dims }: { dims: Persona["personality"]["dimensions"] }) {
+  const [mode, setMode] = useState<"mbti" | "bigfive">("mbti");
+  const rows = mode === "mbti" ? mbtiRows(dims) : bigFiveRows(dims);
+
   return (
-    <div className="space-y-3 mt-4">
-      <div className="text-[10px] uppercase tracking-wide text-gray-500 text-center">
-        continuous dimension scores · mbti letters derived
+    <div className="mt-4">
+      <div className="flex items-center justify-center gap-1 mb-3">
+        <button
+          onClick={() => setMode("mbti")}
+          aria-pressed={mode === "mbti"}
+          className={
+            "px-2.5 py-1 text-[10px] uppercase tracking-wide rounded-full transition-colors " +
+            (mode === "mbti"
+              ? "bg-imessage-blue text-white font-semibold"
+              : "bg-gray-100 text-gray-500 hover:bg-gray-200")
+          }
+        >
+          MBTI
+        </button>
+        <button
+          onClick={() => setMode("bigfive")}
+          aria-pressed={mode === "bigfive"}
+          className={
+            "px-2.5 py-1 text-[10px] uppercase tracking-wide rounded-full transition-colors " +
+            (mode === "bigfive"
+              ? "bg-imessage-blue text-white font-semibold"
+              : "bg-gray-100 text-gray-500 hover:bg-gray-200")
+          }
+        >
+          Big Five
+        </button>
       </div>
-      {rows.map(({ label, left, right, value, tooltip }) => {
-        const dominantLetter = value >= 0.5 ? right : left;
-        return (
-          <div key={label} title={tooltip}>
-            <div className="flex justify-between text-[11px] mb-0.5">
-              <span className="text-gray-800 font-medium">{label}</span>
-              <span className="font-mono text-gray-900">{value.toFixed(2)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-[11px]">
-              <span className="w-3 text-right font-semibold text-gray-700">{left}</span>
-              <div
-                role="meter"
-                aria-label={`${label}: ${value.toFixed(2)}, skewing toward ${dominantLetter}. ${tooltip}`}
-                aria-valuenow={Number(value.toFixed(2))}
-                aria-valuemin={0}
-                aria-valuemax={1}
-                className="flex-1 h-1.5 bg-gray-200 rounded-full relative"
-              >
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-imessage-blue"
-                  style={{ left: `calc(${value * 100}% - 6px)` }}
-                />
+      <div className="text-[10px] text-gray-500 text-center leading-tight mb-3 px-2">
+        {mode === "mbti" ? (
+          <>
+            four continuous scores · mbti letters derived by thresholding at 0.5
+          </>
+        ) : (
+          <>
+            same four continuous scores · relabeled as big-five–adjacent axes
+            <br />
+            <span className="text-gray-400">
+              (agreeableness = 1 − thinking; others correlate positively)
+            </span>
+          </>
+        )}
+      </div>
+      <div className="space-y-3">
+        {rows.map(({ label, left, right, value, tooltip }) => {
+          const dominantLetter = value >= 0.5 ? right : left;
+          return (
+            <div key={label} title={tooltip}>
+              <div className="flex justify-between items-baseline text-[11px] mb-0.5">
+                <span className="text-gray-900 font-semibold">{label}</span>
+                <span className="font-mono text-gray-900">{value.toFixed(2)}</span>
               </div>
-              <span className="w-3 text-left font-semibold text-gray-700">{right}</span>
+              <div className="flex items-center gap-2 text-[11px]">
+                <span className="w-8 text-right font-medium text-gray-600">{left}</span>
+                <div
+                  role="meter"
+                  aria-label={`${label}: ${value.toFixed(2)}, skewing toward ${dominantLetter}. ${tooltip}`}
+                  aria-valuenow={Number(value.toFixed(2))}
+                  aria-valuemin={0}
+                  aria-valuemax={1}
+                  className="flex-1 h-1.5 bg-gray-200 rounded-full relative"
+                >
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-imessage-blue"
+                    style={{ left: `calc(${value * 100}% - 6px)` }}
+                  />
+                </div>
+                <span className="w-8 text-left font-medium text-gray-600">{right}</span>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
