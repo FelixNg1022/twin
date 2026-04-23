@@ -48,6 +48,10 @@ tsconfig.tsbuildinfo
 # Word exports (local prep only — not reviewer-facing; markdown sources ship instead)
 *.docx
 
+# Raw video recordings (GIFs ship, source .mov files stay local)
+*.mov
+*.MOV
+
 # Process files
 *.pid
 *.log

@@ -2,8 +2,9 @@
 
 > An onboarding agent that creates your digital double for Ditto's matchmaking engine.
 
-<!-- Record a GIF of the persona reveal moment and save to docs/reveal.gif to enable: -->
-<!-- ![Twin reveal animation](docs/reveal.gif) -->
+<p align="center">
+  <img src="docs/reveal.gif" alt="Twin persona reveal — ISFJ card springs up with continuous dimension scores" width="360" />
+</p>
 
 ## What it does
 
