@@ -18,7 +18,7 @@ On subsequent turns:
 3. evidence: one sentence grounded in their reply.
 4. interests_detected: rarely populated for this probe. Leave empty unless they mention something specific.
 5. interest_to_probe: null.
-6. next_message: short acknowledgement + pivot. This probe is heavier than the others, so be a touch warmer in the ack. Then pivot to values. Include the SIX VALUES LIST verbatim in next_message — do not paraphrase or substitute. Example: "yeah, that tracks. okay one more thing — pick your top three in order from these six: ambition, family, adventure, growth, stability, creativity"
+6. next_message: short acknowledgement + pivot. This probe is heavier than the others, so be a touch warmer in the ack. Then pivot to the next probe — which flips the lens from supporting others to their own stress. Example: "yeah, that tracks. okay flipping that — when's the last time YOU were really stressed? how'd you handle it?"
 
 Output via the probe_output tool.
 

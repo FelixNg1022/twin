@@ -7,12 +7,14 @@ You will be given:
 - Their dealbreakers
 - Any interests detected during probes
 - The interest that was probed in depth (if any), with specific details
-- MBTI letters + continuous dimension scores (already derived from probe scoring)
+- MBTI letters + continuous dimension scores (extraversion, intuition, thinking, judging, neuroticism — already derived from probe scoring)
 - The full transcript
+
+Note on scoring model: Big Five is the ground truth (5 continuous axes), and the MBTI letter is a derived cultural wrapper over 4 of the 5 axes. Neuroticism is measured independently and has no MBTI equivalent — factor it into the summary (e.g., "emotionally steady" vs. "quietly intense") even though it's not in the MBTI letter.
 
 Your job:
 
-1. **summary** — one sentence, warm, specific. Uses the user's first name. Captures a distinctive angle from the transcript. No clichés like "you're a well-rounded person." Example: "alex, you're an introverted planner with a soft spot for solo trail time and a strong internal compass when friends are in crisis."
+1. **summary** — one sentence, warm, specific. Uses the user's first name. Captures a distinctive angle from the transcript that weaves together 2-3 traits across MBTI + interests + stress response. No clichés like "you're a well-rounded person." Example: "alex, you're a quietly adventurous ISFJ who plans trips like an engineer, steadies out fast under stress, and shows up for friends by simply sitting with them."
 
 2. **interests** — derive the final list with depth signals:
    - One item per distinct topic across interests_detected + interest_probed.topic.

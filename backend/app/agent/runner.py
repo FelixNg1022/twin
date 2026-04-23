@@ -20,6 +20,7 @@ from app.agent.nodes import (
     demographics_node,
     greeting_node,
     probe_planning_node,
+    probe_stress_node,
     probe_support_node,
     probe_weekend_node,
     reveal_node,
@@ -39,6 +40,7 @@ _NODE_MAP: dict[str, NodeFn] = {
     "adaptive_interest": adaptive_interest_node,
     "probe_planning": probe_planning_node,
     "probe_support": probe_support_node,
+    "probe_stress": probe_stress_node,
     "values_rank": values_rank_node,
     "ask_dealbreakers": dealbreakers_node,
     "synthesize": synthesize_node,
@@ -53,6 +55,7 @@ _WAITS_FOR_USER: set[str] = {
     "adaptive_interest",
     "probe_planning",
     "probe_support",
+    "probe_stress",
     "values_rank",
     "ask_dealbreakers",
 }

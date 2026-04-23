@@ -19,6 +19,7 @@ export interface PersonalityDimensions {
   intuition: number;
   thinking: number;
   judging: number;
+  neuroticism: number;
 }
 
 export interface Personality {

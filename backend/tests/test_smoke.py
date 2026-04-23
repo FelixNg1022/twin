@@ -37,6 +37,7 @@ def test_graph_has_all_expected_nodes():
         "adaptive_interest",
         "probe_planning",
         "probe_support",
+        "probe_stress",
         "values_rank",
         "ask_dealbreakers",
         "synthesize",

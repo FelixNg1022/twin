@@ -257,10 +257,9 @@ function bigFiveRows(dims: Persona["personality"]["dimensions"]): BarRow[] {
       label: "Neuroticism",
       left: "Low",
       right: "High",
-      value: 0,
+      value: dims.neuroticism,
       tooltip:
-        "The fifth Big Five factor. NOT measured in v1 — MBTI has no Neuroticism axis, so we'd need a dedicated behavioral probe (e.g., how the user responds to a recent stressor). Planned for v2 alongside the humor signal.",
-      notMeasured: true,
+        "Big Five Neuroticism. No MBTI equivalent — scored independently from a dedicated behavioral probe (recent stressor + coping response). This is the factor that makes Big Five the ground truth: MBTI only captures 4 of these 5 axes.",
     },
   ];
 }
@@ -300,14 +299,14 @@ function DimensionBars({ dims }: { dims: Persona["personality"]["dimensions"] })
       <div className="text-[10px] text-gray-500 text-center leading-tight mb-3 px-2">
         {mode === "mbti" ? (
           <>
-            four continuous scores · mbti letters derived by thresholding at 0.5
+            4 of 5 big five scores rendered as mbti axes · letter derived by thresholding at 0.5
           </>
         ) : (
           <>
-            same four continuous scores · relabeled as big-five–adjacent axes
+            big five is the ground truth · mbti letters derived from 4 of 5 axes
             <br />
             <span className="text-gray-400">
-              (agreeableness = 1 − thinking; others correlate positively)
+              (agreeableness = 1 − mbti-thinking · neuroticism probed independently)
             </span>
           </>
         )}
