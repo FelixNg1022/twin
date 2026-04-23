@@ -9,6 +9,7 @@ from app.channels.base import Channel
 from app.config import settings
 from app.models.message import Message
 from app.models.persona import Demographics
+from app.models.probe import ProbeOutput
 from app.services.anthropic_client import get_client
 from app.services.structured_call import structured_call
 
@@ -175,4 +176,62 @@ async def demographics_node(state: AgentState, config: RunnableConfig) -> dict:
         "demographics_partial": state.demographics_partial,
         "demographics_pending_field": None,
         "current_node": "probe_weekend",
+    }
+
+
+# ---------- probe_weekend ----------
+
+async def probe_weekend_node(state: AgentState, config: RunnableConfig) -> dict:
+    """Asks about last Saturday, scores extraversion, mines interests."""
+    channel = _get_channel(config)
+    user_text = _user_last_text(state)
+    system = load("probe_weekend")
+    user_content = (
+        f"FIRST_NAME: {state.first_name or 'unknown'}\n"
+        f"USER_MESSAGE: {user_text or '(no user message yet — send the opening question)'}"
+    )
+    messages = [{"role": "user", "content": user_content}]
+
+    if not user_text:
+        client = get_client()
+        response = await client.messages.create(
+            model=settings.anthropic_turn_model,
+            max_tokens=200,
+            system=system + "\n\nThis is your FIRST turn of this probe. Just send the question.",
+            messages=messages,
+        )
+        text = "".join(b.text for b in response.content if b.type == "text").strip()
+        await _send(state, channel, text)
+        return {
+            "messages": state.messages,
+            "current_node": "probe_weekend",
+        }
+
+    probe = await structured_call(
+        model=settings.anthropic_turn_model,
+        system=system,
+        messages=messages,
+        output_model=ProbeOutput,
+        tool_name="probe_output",
+        tool_description="Record scores, detected interests, and the next message.",
+    )
+
+    new_scores = dict(state.dimension_scores)
+    for dim, score in probe.scores.items():
+        new_scores.setdefault(dim, []).append(score)
+
+    new_interests = list(state.interests_detected)
+    for t in probe.interests_detected:
+        if t not in new_interests:
+            new_interests.append(t)
+
+    await _send(state, channel, probe.next_message)
+
+    next_node = "adaptive_interest" if probe.interest_to_probe else "probe_planning"
+    return {
+        "messages": state.messages,
+        "dimension_scores": new_scores,
+        "interests_detected": new_interests,
+        "interest_to_probe_topic": probe.interest_to_probe,
+        "current_node": next_node,
     }
