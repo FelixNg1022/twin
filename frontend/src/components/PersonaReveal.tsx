@@ -118,24 +118,33 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function DimensionBars({ dims }: { dims: Persona["personality"]["dimensions"] }) {
-  const rows: Array<[string, string, number]> = [
-    ["I", "E", dims.extraversion],
-    ["S", "N", dims.intuition],
-    ["F", "T", dims.thinking],
-    ["P", "J", dims.judging],
+  const rows: Array<{ label: string; left: string; right: string; value: number }> = [
+    { label: "Extraversion", left: "I", right: "E", value: dims.extraversion },
+    { label: "Intuition", left: "S", right: "N", value: dims.intuition },
+    { label: "Thinking", left: "F", right: "T", value: dims.thinking },
+    { label: "Judging", left: "P", right: "J", value: dims.judging },
   ];
   return (
-    <div className="space-y-2 mt-4">
-      {rows.map(([left, right, v]) => (
-        <div key={left + right} className="flex items-center gap-3 text-xs">
-          <span className="w-4 text-right font-semibold">{left}</span>
-          <div className="flex-1 h-1.5 bg-gray-200 rounded-full relative">
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-imessage-blue"
-              style={{ left: `calc(${v * 100}% - 6px)` }}
-            />
+    <div className="space-y-3 mt-4">
+      <div className="text-[10px] uppercase tracking-wide text-gray-400 text-center">
+        continuous dimension scores · mbti letters derived
+      </div>
+      {rows.map(({ label, left, right, value }) => (
+        <div key={label}>
+          <div className="flex justify-between text-[11px] mb-0.5">
+            <span className="text-gray-600">{label}</span>
+            <span className="font-mono text-gray-700">{value.toFixed(2)}</span>
           </div>
-          <span className="w-4 text-left font-semibold">{right}</span>
+          <div className="flex items-center gap-2 text-[11px]">
+            <span className="w-3 text-right font-semibold text-gray-500">{left}</span>
+            <div className="flex-1 h-1.5 bg-gray-200 rounded-full relative">
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-imessage-blue"
+                style={{ left: `calc(${value * 100}% - 6px)` }}
+              />
+            </div>
+            <span className="w-3 text-left font-semibold text-gray-500">{right}</span>
+          </div>
         </div>
       ))}
     </div>
