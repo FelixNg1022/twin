@@ -22,7 +22,8 @@ function App() {
     <div className="flex flex-col h-full max-w-[480px] mx-auto bg-white relative">
       <button
         onClick={handleReset}
-        className="absolute top-2 right-3 text-xs text-gray-400 hover:text-gray-700 z-10"
+        aria-label="Start over — reset the interview"
+        className="absolute top-2 right-2 min-w-11 min-h-11 px-3 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 rounded-full z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-imessage-blue/60 focus-visible:ring-offset-2 transition-colors"
       >
         Start over
       </button>
