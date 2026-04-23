@@ -98,7 +98,7 @@ export function PersonaReveal({ persona, onClose }: Props) {
           >
             {personality.mbti}
           </h1>
-          <p className="text-[15px] text-gray-700 mt-2 max-w-sm mx-auto leading-snug">
+          <p className="text-[15px] text-gray-800 mt-3 max-w-sm mx-auto leading-snug font-medium">
             {summary}
           </p>
         </div>
@@ -161,8 +161,8 @@ export function PersonaReveal({ persona, onClose }: Props) {
           </ul>
         </details>
 
-        <div className="mt-6 text-[11px] text-gray-500">
-          {demographics.campus} · {demographics.age} · ~{demographics.travel_radius_km}km radius
+        <div className="mt-6 pt-4 border-t border-gray-200 text-[12px] text-gray-600">
+          {demographics.campus} · {demographics.age} · within ~{demographics.travel_radius_km}km
         </div>
       </div>
     </div>
@@ -181,30 +181,60 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function DimensionBars({ dims }: { dims: Persona["personality"]["dimensions"] }) {
-  const rows: Array<{ label: string; left: string; right: string; value: number }> = [
-    { label: "Extraversion", left: "I", right: "E", value: dims.extraversion },
-    { label: "Intuition", left: "S", right: "N", value: dims.intuition },
-    { label: "Thinking", left: "F", right: "T", value: dims.thinking },
-    { label: "Judging", left: "P", right: "J", value: dims.judging },
+  const rows: Array<{
+    label: string;
+    left: string;
+    right: string;
+    value: number;
+    tooltip: string;
+  }> = [
+    {
+      label: "Extraversion",
+      left: "I",
+      right: "E",
+      value: dims.extraversion,
+      tooltip: "Scored from how you described Saturday night — solo vs. crowd energy.",
+    },
+    {
+      label: "Intuition",
+      left: "S",
+      right: "N",
+      value: dims.intuition,
+      tooltip: "Scored from how you plan trips — abstract vibe vs. concrete itinerary.",
+    },
+    {
+      label: "Thinking",
+      left: "F",
+      right: "T",
+      value: dims.thinking,
+      tooltip: "Scored from how you support a friend in crisis — analytical vs. emotional first.",
+    },
+    {
+      label: "Judging",
+      left: "P",
+      right: "J",
+      value: dims.judging,
+      tooltip: "Scored from planning style — structure/closure vs. flexibility/open options.",
+    },
   ];
   return (
     <div className="space-y-3 mt-4">
       <div className="text-[10px] uppercase tracking-wide text-gray-500 text-center">
         continuous dimension scores · mbti letters derived
       </div>
-      {rows.map(({ label, left, right, value }) => {
+      {rows.map(({ label, left, right, value, tooltip }) => {
         const dominantLetter = value >= 0.5 ? right : left;
         return (
-          <div key={label}>
+          <div key={label} title={tooltip}>
             <div className="flex justify-between text-[11px] mb-0.5">
-              <span className="text-gray-700">{label}</span>
-              <span className="font-mono text-gray-800">{value.toFixed(2)}</span>
+              <span className="text-gray-800 font-medium">{label}</span>
+              <span className="font-mono text-gray-900">{value.toFixed(2)}</span>
             </div>
             <div className="flex items-center gap-2 text-[11px]">
-              <span className="w-3 text-right font-semibold text-gray-600">{left}</span>
+              <span className="w-3 text-right font-semibold text-gray-700">{left}</span>
               <div
                 role="meter"
-                aria-label={`${label}: ${value.toFixed(2)}, skewing toward ${dominantLetter}`}
+                aria-label={`${label}: ${value.toFixed(2)}, skewing toward ${dominantLetter}. ${tooltip}`}
                 aria-valuenow={Number(value.toFixed(2))}
                 aria-valuemin={0}
                 aria-valuemax={1}
@@ -215,7 +245,7 @@ function DimensionBars({ dims }: { dims: Persona["personality"]["dimensions"] })
                   style={{ left: `calc(${value * 100}% - 6px)` }}
                 />
               </div>
-              <span className="w-3 text-left font-semibold text-gray-600">{right}</span>
+              <span className="w-3 text-left font-semibold text-gray-700">{right}</span>
             </div>
           </div>
         );
