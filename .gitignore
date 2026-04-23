@@ -1,19 +1,55 @@
+# macOS
 .DS_Store
+
+# Env & secrets
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.development
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
+*.egg
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
 .venv/
 venv/
+
+# Node / frontend
 node_modules/
 dist/
 build/
+tsconfig.tsbuildinfo
+
+# Databases
 *.db
 *.sqlite
 *.sqlite3
+
+# Editor / IDE
 .vscode/
 .idea/
+
+# Claude Code local settings
 .claude/
+
+# Office / Word temp & lock files
+~$*
+
+# Process files
+*.pid
+*.log
+
+# Proprietary content from Ditto's take-home prompt — kept locally,
+# not published to the public repo. If you want to include it for
+# reference, remove this line.
+Twin Spec Dating Challenge.md
