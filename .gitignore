@@ -45,6 +45,9 @@ tsconfig.tsbuildinfo
 # Office / Word temp & lock files
 ~$*
 
+# Word exports (local prep only — not reviewer-facing; markdown sources ship instead)
+*.docx
+
 # Process files
 *.pid
 *.log
