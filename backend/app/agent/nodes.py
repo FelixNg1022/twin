@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from langchain_core.runnables import RunnableConfig
@@ -8,9 +9,10 @@ from app.agent.state import AgentState
 from app.channels.base import Channel
 from app.config import settings
 from app.models.message import Message
-from app.models.persona import Demographics
-from app.models.probe import ProbeOutput
+from app.models.persona import Demographics, Interest, Persona
+from app.models.probe import InterestProbeOutput, ProbeOutput
 from app.services.anthropic_client import get_client
+from app.services.mbti import derive_mbti
 from app.services.structured_call import structured_call
 
 
@@ -25,7 +27,9 @@ def _get_channel(config: RunnableConfig) -> Channel:
 async def _send(state: AgentState, channel: Channel, text: str) -> None:
     """Deliver via channel AND append to state.messages for transcript."""
     await channel.deliver(state.session_id, text)
-    state.messages.append(Message(role="assistant", text=text, created_at=datetime.utcnow()))
+    state.messages.append(
+        Message(role="assistant", text=text, created_at=datetime.utcnow())
+    )
 
 
 def _user_last_text(state: AgentState) -> str:
@@ -52,6 +56,7 @@ def _pending_user_input(state: AgentState) -> str:
 
 # ---------- greeting ----------
 
+
 async def greeting_node(state: AgentState, config: RunnableConfig) -> dict:
     """First turn: introduce Twin and ask for the user's first name."""
     channel = _get_channel(config)
@@ -64,7 +69,9 @@ async def greeting_node(state: AgentState, config: RunnableConfig) -> dict:
         system=system,
         messages=[{"role": "user", "content": "<BEGIN>"}],
     )
-    text = "".join(block.text for block in response.content if block.type == "text").strip()
+    text = "".join(
+        block.text for block in response.content if block.type == "text"
+    ).strip()
 
     await _send(state, channel, text)
     return {
@@ -76,7 +83,14 @@ async def greeting_node(state: AgentState, config: RunnableConfig) -> dict:
 
 # ---------- demographics ----------
 
-_DEMOGRAPHIC_FIELDS = ("first_name", "age", "gender", "sexual_orientation", "campus", "travel_radius_km")
+_DEMOGRAPHIC_FIELDS = (
+    "first_name",
+    "age",
+    "gender",
+    "sexual_orientation",
+    "campus",
+    "travel_radius_km",
+)
 
 
 class _DemographicsStep(BaseModel):
@@ -94,8 +108,7 @@ class _DemographicsStep(BaseModel):
         "fields are now filled.",
     )
     next_message: str = Field(
-        description="The next text message to send. Short, casual, one question "
-        "max.",
+        description="The next text message to send. Short, casual, one question max.",
     )
 
 
@@ -131,7 +144,9 @@ def _try_finalize_demographics(state: AgentState) -> None:
     required = ("age", "gender", "sexual_orientation", "campus", "travel_radius_km")
     if all(f in state.demographics_partial for f in required):
         try:
-            state.demographics = Demographics(**{k: state.demographics_partial[k] for k in required})
+            state.demographics = Demographics(
+                **{k: state.demographics_partial[k] for k in required}
+            )
         except Exception:
             # Validation failed (e.g. age wasn't really an int). Leave demographics=None;
             # we'll try again once the LLM re-asks the problematic field.
@@ -196,6 +211,7 @@ async def demographics_node(state: AgentState, config: RunnableConfig) -> dict:
 
 # ---------- probe_weekend ----------
 
+
 async def probe_weekend_node(state: AgentState, config: RunnableConfig) -> dict:
     """Asks about last Saturday, scores extraversion, mines interests."""
     channel = _get_channel(config)
@@ -212,7 +228,8 @@ async def probe_weekend_node(state: AgentState, config: RunnableConfig) -> dict:
         response = await client.messages.create(
             model=settings.anthropic_turn_model,
             max_tokens=200,
-            system=system + "\n\nThis is your FIRST turn of this probe. Just send the question.",
+            system=system
+            + "\n\nThis is your FIRST turn of this probe. Just send the question.",
             messages=messages,
         )
         text = "".join(b.text for b in response.content if b.type == "text").strip()
@@ -253,9 +270,6 @@ async def probe_weekend_node(state: AgentState, config: RunnableConfig) -> dict:
 
 
 # ---------- adaptive_interest ----------
-
-from app.models.persona import Interest
-from app.models.probe import InterestProbeOutput
 
 
 async def adaptive_interest_node(state: AgentState, config: RunnableConfig) -> dict:
@@ -301,6 +315,7 @@ async def adaptive_interest_node(state: AgentState, config: RunnableConfig) -> d
 
 # ---------- probe_planning ----------
 
+
 async def probe_planning_node(state: AgentState, config: RunnableConfig) -> dict:
     """Asks about trip planning, scores intuition + judging."""
     channel = _get_channel(config)
@@ -317,7 +332,8 @@ async def probe_planning_node(state: AgentState, config: RunnableConfig) -> dict
         response = await client.messages.create(
             model=settings.anthropic_turn_model,
             max_tokens=200,
-            system=system + "\n\nThis is your FIRST turn of this probe. Just send the opening question.",
+            system=system
+            + "\n\nThis is your FIRST turn of this probe. Just send the opening question.",
             messages=messages,
         )
         text = "".join(b.text for b in response.content if b.type == "text").strip()
@@ -353,6 +369,7 @@ async def probe_planning_node(state: AgentState, config: RunnableConfig) -> dict
 
 # ---------- probe_support ----------
 
+
 async def probe_support_node(state: AgentState, config: RunnableConfig) -> dict:
     """Asks about supporting a friend through a breakup, scores thinking."""
     channel = _get_channel(config)
@@ -369,7 +386,8 @@ async def probe_support_node(state: AgentState, config: RunnableConfig) -> dict:
         response = await client.messages.create(
             model=settings.anthropic_turn_model,
             max_tokens=200,
-            system=system + "\n\nThis is your FIRST turn of this probe. Just send the opening question.",
+            system=system
+            + "\n\nThis is your FIRST turn of this probe. Just send the opening question.",
             messages=messages,
         )
         text = "".join(b.text for b in response.content if b.type == "text").strip()
@@ -405,6 +423,7 @@ async def probe_support_node(state: AgentState, config: RunnableConfig) -> dict:
 
 # ---------- probe_stress (Big Five Neuroticism) ----------
 
+
 async def probe_stress_node(state: AgentState, config: RunnableConfig) -> dict:
     """Asks about recent stress experience, scores Big Five Neuroticism.
 
@@ -426,7 +445,8 @@ async def probe_stress_node(state: AgentState, config: RunnableConfig) -> dict:
         response = await client.messages.create(
             model=settings.anthropic_turn_model,
             max_tokens=200,
-            system=system + "\n\nThis is your FIRST turn of this probe. Just send the opening question.",
+            system=system
+            + "\n\nThis is your FIRST turn of this probe. Just send the opening question.",
             messages=messages,
         )
         text = "".join(b.text for b in response.content if b.type == "text").strip()
@@ -462,6 +482,7 @@ async def probe_stress_node(state: AgentState, config: RunnableConfig) -> dict:
 
 # ---------- values_rank ----------
 
+
 class _ValuesRankOutput(BaseModel):
     values_ranked: list[str] = Field(
         description="User's top 3 in order, each from the fixed vocabulary "
@@ -490,7 +511,8 @@ async def values_rank_node(state: AgentState, config: RunnableConfig) -> dict:
         response = await client.messages.create(
             model=settings.anthropic_turn_model,
             max_tokens=200,
-            system=system + "\n\nThis is your FIRST turn of this step. Just send the opening question with the list of six values.",
+            system=system
+            + "\n\nThis is your FIRST turn of this step. Just send the opening question with the list of six values.",
             messages=messages,
         )
         text = "".join(b.text for b in response.content if b.type == "text").strip()
@@ -516,6 +538,7 @@ async def values_rank_node(state: AgentState, config: RunnableConfig) -> dict:
 
 # ---------- dealbreakers ----------
 
+
 class _DealbreakersOutput(BaseModel):
     dealbreakers: list[str] = Field(
         description="List of short dealbreaker phrases extracted from the user.",
@@ -540,7 +563,8 @@ async def dealbreakers_node(state: AgentState, config: RunnableConfig) -> dict:
         response = await client.messages.create(
             model=settings.anthropic_turn_model,
             max_tokens=200,
-            system=system + "\n\nThis is your FIRST turn of this step. Just send the opening question.",
+            system=system
+            + "\n\nThis is your FIRST turn of this step. Just send the opening question.",
             messages=messages,
         )
         text = "".join(b.text for b in response.content if b.type == "text").strip()
@@ -565,11 +589,6 @@ async def dealbreakers_node(state: AgentState, config: RunnableConfig) -> dict:
 
 
 # ---------- synthesize + reveal ----------
-
-import json
-
-from app.models.persona import Persona
-from app.services.mbti import derive_mbti
 
 
 class _PersonaSynthOutput(BaseModel):

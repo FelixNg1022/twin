@@ -18,7 +18,8 @@ export function PersonaReveal({ persona, onClose }: Props) {
   const [mounted, setMounted] = useState(false);
   const [closing, setClosing] = useState(false);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
-  const reducedMotion = useRef(prefersReducedMotion());
+  // Capture once at mount — safe to read during render because it's state, not a ref.
+  const [reducedMotion] = useState<boolean>(() => prefersReducedMotion());
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 20);
@@ -34,7 +35,7 @@ export function PersonaReveal({ persona, onClose }: Props) {
   const handleClose = () => {
     if (closing) return;
     setClosing(true);
-    const delay = reducedMotion.current ? 0 : 280;
+    const delay = reducedMotion ? 0 : 280;
     window.setTimeout(() => onClose(), delay);
   };
 
@@ -61,7 +62,7 @@ export function PersonaReveal({ persona, onClose }: Props) {
   } = persona;
 
   const open = mounted && !closing;
-  const transitionCss = reducedMotion.current
+  const transitionCss = reducedMotion
     ? "none"
     : "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
 
@@ -186,7 +187,6 @@ type BarRow = {
   right: string;
   value: number;
   tooltip: string;
-  notMeasured?: boolean;
 };
 
 function mbtiRows(dims: Persona["personality"]["dimensions"]): BarRow[] {
@@ -312,34 +312,8 @@ function DimensionBars({ dims }: { dims: Persona["personality"]["dimensions"] })
         )}
       </div>
       <div className="space-y-3">
-        {rows.map((row) => {
-          const { label, left, right, value, tooltip, notMeasured } = row;
+        {rows.map(({ label, left, right, value, tooltip }) => {
           const dominantLetter = value >= 0.5 ? right : left;
-          if (notMeasured) {
-            return (
-              <div key={label} title={tooltip} className="opacity-60">
-                <div className="flex justify-between items-baseline text-[11px] mb-0.5">
-                  <span className="text-gray-500 font-medium italic">{label}</span>
-                  <span className="font-mono text-gray-400 italic">not measured</span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px]">
-                  <span className="w-8 text-right font-medium text-gray-400">{left}</span>
-                  <div
-                    role="meter"
-                    aria-label={`${label} is not measured in v1. ${tooltip}`}
-                    aria-valuenow={0}
-                    aria-valuemin={0}
-                    aria-valuemax={1}
-                    className="flex-1 h-1.5 bg-gray-100 rounded-full relative border border-dashed border-gray-300"
-                  />
-                  <span className="w-8 text-left font-medium text-gray-400">{right}</span>
-                </div>
-                <div className="text-[10px] text-gray-400 italic mt-0.5 text-center">
-                  no mbti equivalent · v2 via dedicated probe
-                </div>
-              </div>
-            );
-          }
           return (
             <div key={label} title={tooltip}>
               <div className="flex justify-between items-baseline text-[11px] mb-0.5">

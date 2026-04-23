@@ -32,7 +32,9 @@ async def create_session() -> SessionCreateResponse:
 
 
 @router.post("/{session_id}/messages", response_model=MessageSendResponse)
-async def send_message(session_id: str, body: MessageSendRequest) -> MessageSendResponse:
+async def send_message(
+    session_id: str, body: MessageSendRequest
+) -> MessageSendResponse:
     try:
         result = await send_user_message(session_id, body.text)
     except LookupError:
@@ -47,7 +49,9 @@ async def get_persona(session_id: str) -> Persona:
     with SessionLocal() as session:
         row = session.get(SessionRow, session_id)
         if row is None:
-            raise HTTPException(status_code=404, detail=f"session {session_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"session {session_id} not found"
+            )
         if not row.complete or not row.persona_json:
             raise HTTPException(
                 status_code=409,

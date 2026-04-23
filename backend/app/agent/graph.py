@@ -40,7 +40,9 @@ def build_graph():
     builder.add_node("probe_support", probe_support_node)
     builder.add_node("probe_stress", probe_stress_node)
     builder.add_node("values_rank", values_rank_node)
-    builder.add_node("ask_dealbreakers", dealbreakers_node)  # renamed to avoid clash with state.dealbreakers
+    builder.add_node(
+        "ask_dealbreakers", dealbreakers_node
+    )  # renamed to avoid clash with state.dealbreakers
     builder.add_node("synthesize", synthesize_node)
     builder.add_node("reveal", reveal_node)
 

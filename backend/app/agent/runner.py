@@ -7,6 +7,7 @@ graph object is still useful for the mermaid diagram. At runtime we dispatch
 to node functions directly based on state.current_node — a plain state
 machine. Sessions are held in an in-process dict keyed by session_id.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -12,6 +12,7 @@ For live end-to-end: set ANTHROPIC_API_KEY in backend/.env and run the app
 against the frontend. The critical correctness properties (MBTI derivation,
 score aggregation boundaries) are covered by test_mbti.py.
 """
+
 from datetime import datetime
 
 import pytest
@@ -43,7 +44,9 @@ def test_graph_has_all_expected_nodes():
         "synthesize",
         "reveal",
     }
-    assert expected.issubset(set(nodes.keys())), f"missing nodes: {expected - set(nodes.keys())}"
+    assert expected.issubset(set(nodes.keys())), (
+        f"missing nodes: {expected - set(nodes.keys())}"
+    )
 
 
 def test_graph_entry_is_greeting():

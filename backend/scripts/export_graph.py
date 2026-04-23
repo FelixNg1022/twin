@@ -2,6 +2,7 @@
 
 Run: cd backend && .venv/bin/python -m scripts.export_graph
 """
+
 from pathlib import Path
 
 from app.agent.graph import build_graph
