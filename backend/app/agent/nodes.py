@@ -35,6 +35,21 @@ def _user_last_text(state: AgentState) -> str:
     return ""
 
 
+def _pending_user_input(state: AgentState) -> str:
+    """Return the user's most recent message IF it hasn't been consumed yet.
+
+    Fresh-entry rule: if the last message in state.messages is an assistant
+    message, the prior user message has already been consumed by the previous
+    node. This node should send its opening question rather than reprocess
+    stale input.
+    """
+    if not state.messages:
+        return ""
+    if state.messages[-1].role != "user":
+        return ""
+    return state.messages[-1].text
+
+
 # ---------- greeting ----------
 
 async def greeting_node(state: AgentState, config: RunnableConfig) -> dict:
@@ -131,7 +146,7 @@ async def demographics_node(state: AgentState, config: RunnableConfig) -> dict:
     """
     channel = _get_channel(config)
     pending = state.demographics_pending_field or "first_name"
-    user_text = _user_last_text(state)
+    user_text = _pending_user_input(state)
 
     system = _build_demographics_system(state)
     messages = [
@@ -184,7 +199,7 @@ async def demographics_node(state: AgentState, config: RunnableConfig) -> dict:
 async def probe_weekend_node(state: AgentState, config: RunnableConfig) -> dict:
     """Asks about last Saturday, scores extraversion, mines interests."""
     channel = _get_channel(config)
-    user_text = _user_last_text(state)
+    user_text = _pending_user_input(state)
     system = load("probe_weekend")
     user_content = (
         f"FIRST_NAME: {state.first_name or 'unknown'}\n"
@@ -247,7 +262,7 @@ async def adaptive_interest_node(state: AgentState, config: RunnableConfig) -> d
     """One follow-up probe about the distinctive interest from probe_weekend."""
     channel = _get_channel(config)
     topic = state.interest_to_probe_topic or ""
-    user_text = _user_last_text(state)
+    user_text = _pending_user_input(state)
 
     system = load("adaptive_interest").format(
         topic=topic,
@@ -289,7 +304,7 @@ async def adaptive_interest_node(state: AgentState, config: RunnableConfig) -> d
 async def probe_planning_node(state: AgentState, config: RunnableConfig) -> dict:
     """Asks about trip planning, scores intuition + judging."""
     channel = _get_channel(config)
-    user_text = _user_last_text(state)
+    user_text = _pending_user_input(state)
     system = load("probe_planning")
     user_content = (
         f"FIRST_NAME: {state.first_name or 'unknown'}\n"
@@ -341,7 +356,7 @@ async def probe_planning_node(state: AgentState, config: RunnableConfig) -> dict
 async def probe_support_node(state: AgentState, config: RunnableConfig) -> dict:
     """Asks about supporting a friend through a breakup, scores thinking."""
     channel = _get_channel(config)
-    user_text = _user_last_text(state)
+    user_text = _pending_user_input(state)
     system = load("probe_support")
     user_content = (
         f"FIRST_NAME: {state.first_name or 'unknown'}\n"
@@ -402,7 +417,7 @@ class _ValuesRankOutput(BaseModel):
 async def values_rank_node(state: AgentState, config: RunnableConfig) -> dict:
     """Asks the user to rank 3 values. No scoring."""
     channel = _get_channel(config)
-    user_text = _user_last_text(state)
+    user_text = _pending_user_input(state)
     system = load("values_rank")
     messages = [
         {
@@ -454,7 +469,7 @@ class _DealbreakersOutput(BaseModel):
 async def dealbreakers_node(state: AgentState, config: RunnableConfig) -> dict:
     """Final interview question. Extracts dealbreakers, transitions to synthesize."""
     channel = _get_channel(config)
-    user_text = _user_last_text(state)
+    user_text = _pending_user_input(state)
     system = load("dealbreakers")
     messages = [
         {
