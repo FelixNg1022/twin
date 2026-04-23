@@ -1,50 +1,43 @@
 import { useState } from "react";
 import { useChat } from "./hooks/useChat";
+import { ChatWindow } from "./components/ChatWindow";
+import { ComposerBar } from "./components/ComposerBar";
+import { PersonaReveal } from "./components/PersonaReveal";
 
 function App() {
-  const { messages, isTyping, send } = useChat();
-  const [input, setInput] = useState("");
+  const { messages, isTyping, complete, persona, send, reset } = useChat();
+  const [revealDismissed, setRevealDismissed] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = input.trim();
-    if (!text || isTyping) return;
-    setInput("");
-    await send(text);
+  const typingLabel =
+    isTyping && messages.length > 12
+      ? "putting your twin together..."
+      : undefined;
+
+  const handleReset = async () => {
+    setRevealDismissed(false);
+    await reset();
   };
 
   return (
-    <div className="flex flex-col h-full max-w-2xl mx-auto p-4">
-      <div className="flex-1 overflow-y-auto space-y-2 pb-4">
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`p-2 rounded ${
-              m.role === "user" ? "bg-blue-100 self-end" : "bg-gray-100 self-start"
-            }`}
-          >
-            <strong>{m.role}:</strong> {m.text}
-          </div>
-        ))}
-        {isTyping && <div className="text-gray-400">...</div>}
-      </div>
-      <form onSubmit={submit} className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="type a message..."
-          disabled={isTyping}
-          className="flex-1 border p-2 rounded"
+    <div className="flex flex-col h-full max-w-[480px] mx-auto bg-white relative">
+      <button
+        onClick={handleReset}
+        className="absolute top-2 right-3 text-xs text-gray-400 hover:text-gray-700 z-10"
+      >
+        Start over
+      </button>
+      <ChatWindow
+        messages={messages}
+        isTyping={isTyping}
+        typingLabel={typingLabel}
+      />
+      <ComposerBar disabled={isTyping} onSend={send} />
+      {complete && persona && !revealDismissed && (
+        <PersonaReveal
+          persona={persona}
+          onClose={() => setRevealDismissed(true)}
         />
-        <button
-          type="submit"
-          disabled={!input.trim() || isTyping}
-          className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
-        >
-          Send
-        </button>
-      </form>
+      )}
     </div>
   );
 }
