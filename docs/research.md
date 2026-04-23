@@ -2,7 +2,7 @@
 
 ## The problem
 
-College dating on mainstream apps is broken in a specific way: swiping commodifies users into thumbnails competing against hundreds of other thumbnails. The matching surface has no signal for who someone actually is — only a handful of photos, a one-line bio, and a prompt answer. Pew's 2023 dating-app survey reports that ~56% of users under 30 describe recent dating-app experiences as negative; the top cited reasons are superficial interactions and message fatigue before a date ever happens.
+College dating on mainstream apps is broken in a specific way: swiping commodifies users into thumbnails competing against hundreds of other thumbnails. The matching surface has no signal for who someone actually is — only a handful of photos, a one-line bio, and a prompt answer. Pew's 2023 research on Americans' experiences with online dating finds that roughly half of users under 30 describe recent dating-app experiences as more negative than positive; common complaints cluster around superficial interactions and message fatigue before a date ever happens.
 
 Ditto's bet is that an AI-native matchmaker can skip the swipe surface entirely: users text an agent their preferences, an AI persona represents them in simulated matching, and a single date is proposed per week. For that bet to work, the AI persona has to be an accurate enough representation of a user that downstream matching isn't garbage-in-garbage-out. **Twin is the feature that produces that representation.**
 
