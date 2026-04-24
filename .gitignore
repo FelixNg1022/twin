@@ -60,3 +60,11 @@ tsconfig.tsbuildinfo
 # not published to the public repo. If you want to include it for
 # reference, remove this line.
 Twin Spec Dating Challenge.md
+
+# Internal process artifacts (video prep, submission draft, UX audit) —
+# kept locally for reference but not reviewer-facing.
+docs/video-plan.md
+docs/video-script.md
+docs/submission-notes.md
+docs/design-review-report.md
+docs/design-review-screenshots/
